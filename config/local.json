@@ -1,0 +1,6 @@
+{
+    "app":{
+        "port":8001,
+        "stripe_secret":"sk_test_51KOsMyHsW9ET26Jgq9PIOajkQsd0fydRZ9gqc5vQ6j325DcTS0tI42StowMY1wvzIMkP9UwOeuT1K155CGkqyeji00Ck0eXjNe"
+    }
+}
