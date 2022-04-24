@@ -39,6 +39,22 @@ app.post("/create-customer", async (req, res) => {
   }
 });
 
+app.post("/create-invoice", async (req, res) => {
+  try {
+    const { body } = req;
+    const invoiceItem = await stripe.invoiceItems.create(body); // customer:id, price;
+    const invoice = await stripe.invoices.create({
+      customer: body.customer,
+      collection_method: "send_invoice",
+      days_until_due: 30,
+    });
+    const sent = await stripe.invoices.sendInvoice(invoice.id);
+    res.json({ success: true, invoiceItem, invoice, sent });
+  } catch (err) {
+    throw err;
+  }
+});
+
 // Match the raw body to content type application/json
 // If you are using Express v4 - v4.16 you need to use body-parser, not express, to retrieve the request body
 app.post(
