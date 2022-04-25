@@ -4,6 +4,7 @@ const schema = mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    stripe_cus_id: String,
   },
   {
     collection: "customers",

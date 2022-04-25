@@ -1,21 +1,12 @@
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Types;
 
-const EURO_CURRENCY = "eur";
-
 const schema = mongoose.Schema(
   {
-    customer: { type: ObjectId, required: true, unique: true },
-    product: { type: ObjectId, required: true },
-    unit_price: { type: Number, required: true },
-    currency: { type: String, default: EURO_CURRENCY },
-    is_recurring: { type: Boolean, default: false },
-    billing_cycle: {
-      type: String,
-      enum: ["Monthly", "Yearly", "One Time"],
-      default: "One Time",
-    },
-    stripe_customer_id: { type: String },
+    stripe_cus_id: { type: String, required: true, unique: true },
+    price_id: { type: ObjectId, required: true },
+    expires_at: { type: Date, default: Date.now() }, // TODO: calculate expiry date
+    is_paid: { type: Boolean, default: true },
   },
   {
     collection: "membership",

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const schema = mongoose.Schema(
   {
     name: { type: String, required: true, unique: true },
-    stripe_product_id: { type: String },
+    stripe_product_id: { type: String, required: true, unique: true },
   },
   {
     collection: "products",

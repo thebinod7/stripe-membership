@@ -1,6 +1,6 @@
 const MembershipModel = require("../models/membership");
 
-const createMembership = (payload) => {
+const saveMembership = (payload) => {
   return MembershipModel.create(payload);
 };
 
@@ -13,7 +13,7 @@ const getMembership = (id) => {
 };
 
 module.exports = {
-  createMembership,
+  saveMembership,
   listAll,
   getMembership,
 };

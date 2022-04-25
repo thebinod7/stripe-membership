@@ -21,6 +21,7 @@ mongoose.connection.on("error", function (err) {
 //===Controllers===
 const CustomerController = require("./controllers/customer");
 const MembershipController = require("./controllers/membership");
+const PricingController = require("./controllers/pricing");
 const ProductController = require("./controllers/product");
 
 app.use(express.json());
@@ -29,15 +30,24 @@ app.get("/", (req, res) => {
   res.json({ message: "Hello world" });
 });
 
+// 1. Add tenant to stripe customer list
 app.post("/add-customer", async (req, res) => {
   try {
-    const customer = await CustomerController.saveCustomer(req.body);
+    const { body } = req;
+    const cus = await stripe.customers.create({
+      name: body.name,
+      email: body.email,
+      description: body.description || "",
+    });
+    body.stripe_cus_id = cus.id;
+    const customer = await CustomerController.saveCustomer(body);
     res.json({ success: true, customer });
   } catch (err) {
     res.json({ success: false, message: err.message });
   }
 });
 
+// 2. Add product and create pricing
 app.post("/add-product", async (req, res) => {
   try {
     const { body } = req;
@@ -46,65 +56,55 @@ app.post("/add-product", async (req, res) => {
     const stripe_product = await stripe.products.create({ name: body.name });
     body.stripe_product_id = stripe_product.id;
     const product = await ProductController.saveProduct(body);
+    await createProductPrice({
+      ...body,
+      stripe_product_id: stripe_product.id,
+    });
     res.json({ success: true, product });
   } catch (err) {
     res.json({ success: false, message: err.message });
   }
 });
 
+const createProductPrice = async (payload) => {
+  const stripe_price_payload = {
+    product: payload.stripe_product_id,
+    unit_amount: payload.unit_amount,
+    currency: "eur",
+  };
+  if (payload.recurring) stripe_price_payload.recurring = payload.recurring;
+  const price = await stripe.prices.create(stripe_price_payload);
+  payload.stripe_price_id = price.id;
+  return PricingController.createPricing(payload);
+};
+
+// 3. Subscribe to membership
 app.post("/subscribe", async (req, res) => {
   try {
-    // Create
-  } catch (err) {
-    throw err;
-  }
-});
-
-// Create membership plans
-app.post("/create-product-price", async (req, res) => {
-  try {
-    const { body } = req;
-    const product = await stripe.products.create(body);
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: 100,
-      currency: "eur",
+    const { stripe_cus_id, price_id } = req.body;
+    // Create an invoiceItem (Adds pending invoices)
+    await stripe.invoiceItems.create({
+      customer: stripe_cus_id,
+      price: price_id,
     });
-    res.json({ success: true, product, price });
-  } catch (err) {
-    throw err;
-  }
-});
-
-// Subscribe
-app.post("/create-customer", async (req, res) => {
-  try {
-    const { body } = req;
-    const customer = await stripe.customers.create(body);
-    res.json({ success: true, customer });
-  } catch (err) {
-    throw err;
-  }
-});
-
-//TODO: Subscribe & Payment
-app.post("/create-invoice", async (req, res) => {
-  try {
-    const { body } = req;
-    const invoiceItem = await stripe.invoiceItems.create(body); // customer:id, price;
+    // Create an invoice
     const invoice = await stripe.invoices.create({
-      customer: body.customer,
+      customer: stripe_cus_id,
       collection_method: "send_invoice",
       days_until_due: 30,
     });
-    const sent = await stripe.invoices.sendInvoice(invoice.id);
-    res.json({ success: true, invoiceItem, invoice, sent });
+    // Finalize invoice
+    const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
+    // Send invoice
+    const sent_invoice = await stripe.invoices.sendInvoice(finalized.id);
+    await MembershipController.saveMembership({ stripe_cus_id, price_id });
+    res.json({ success: true, data: sent_invoice });
   } catch (err) {
-    throw err;
+    res.json({ success: false, message: err.message });
   }
 });
 
-// Match the raw body to content type application/json
+// 4. Match the raw body to content type application/json
 // If you are using Express v4 - v4.16 you need to use body-parser, not express, to retrieve the request body
 app.post(
   "/webhook",
