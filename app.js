@@ -91,14 +91,16 @@ app.post("/subscribe", async (req, res) => {
     const invoice = await stripe.invoices.create({
       customer: stripe_cus_id,
       collection_method: "send_invoice",
-      days_until_due: 30,
+      days_until_due: 7,
     });
     // Finalize invoice
     const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
+    console.log("Final==>", finalized);
     // Send invoice
-    const sent_invoice = await stripe.invoices.sendInvoice(finalized.id);
+    const send_invoice = await stripe.invoices.sendInvoice(finalized.id);
+    console.log("INVOICE==>", send_invoice);
     await MembershipController.saveMembership({ stripe_cus_id, price_id });
-    res.json({ success: true, data: sent_invoice });
+    res.json({ success: true, data: send_invoice });
   } catch (err) {
     res.json({ success: false, message: err.message });
   }

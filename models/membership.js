@@ -4,7 +4,7 @@ const { ObjectId } = mongoose.Types;
 const schema = mongoose.Schema(
   {
     stripe_cus_id: { type: String, required: true, unique: true },
-    price_id: { type: ObjectId, required: true },
+    price_id: { type: String, required: true },
     expires_at: { type: Date, default: Date.now() }, // TODO: calculate expiry date
     is_paid: { type: Boolean, default: true },
   },
