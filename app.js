@@ -2,11 +2,24 @@
 const express = require("express");
 const app = express();
 const config = require("config");
+const mongoose = require("mongoose");
 
 const APP_PORT = config.get("app.port");
 const STRIPE_SECRET = config.get("app.stripe_secret");
+const DB_URL = config.get("app.db_url");
 
 const stripe = require("stripe")(STRIPE_SECRET);
+
+mongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connection.on("connected", function () {
+  console.log("Connected to database successfully.");
+});
+mongoose.connection.on("error", function (err) {
+  console.log("Database error:" + " " + err);
+});
+
+//===Controllers===
+const ProductController = require("./controllers/product");
 
 app.use(express.json());
 
@@ -14,6 +27,17 @@ app.get("/", (req, res) => {
   res.json({ message: "Hello world" });
 });
 
+app.post("/add-product", async (req, res) => {
+  try {
+    const { body } = req;
+    const product = await ProductController.saveProduct(body);
+    res.json({ success: true, product });
+  } catch (err) {
+    throw err;
+  }
+});
+
+// Create membership plans
 app.post("/create-product-price", async (req, res) => {
   try {
     const { body } = req;
@@ -29,6 +53,7 @@ app.post("/create-product-price", async (req, res) => {
   }
 });
 
+// Subscribe
 app.post("/create-customer", async (req, res) => {
   try {
     const { body } = req;
@@ -39,6 +64,7 @@ app.post("/create-customer", async (req, res) => {
   }
 });
 
+//TODO: Subscribe & Payment
 app.post("/create-invoice", async (req, res) => {
   try {
     const { body } = req;
