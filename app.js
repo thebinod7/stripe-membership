@@ -19,6 +19,8 @@ mongoose.connection.on("error", function (err) {
 });
 
 //===Controllers===
+const CustomerController = require("./controllers/customer");
+const MembershipController = require("./controllers/membership");
 const ProductController = require("./controllers/product");
 
 app.use(express.json());
@@ -27,11 +29,32 @@ app.get("/", (req, res) => {
   res.json({ message: "Hello world" });
 });
 
+app.post("/add-customer", async (req, res) => {
+  try {
+    const customer = await CustomerController.saveCustomer(req.body);
+    res.json({ success: true, customer });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
 app.post("/add-product", async (req, res) => {
   try {
     const { body } = req;
+    const exist = await ProductController.getProductByName(body.name);
+    if (exist) throw Error("Product already exist!");
+    const stripe_product = await stripe.products.create({ name: body.name });
+    body.stripe_product_id = stripe_product.id;
     const product = await ProductController.saveProduct(body);
     res.json({ success: true, product });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+app.post("/subscribe", async (req, res) => {
+  try {
+    // Create
   } catch (err) {
     throw err;
   }

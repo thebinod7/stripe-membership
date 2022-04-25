@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 
 const schema = mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
-    stripe_product_id: { type: String },
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
   },
   {
-    collection: "products",
+    collection: "customers",
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     toObject: {
       virtuals: true,
@@ -17,4 +17,4 @@ const schema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Products", schema);
+module.exports = mongoose.model("Customer", schema);
